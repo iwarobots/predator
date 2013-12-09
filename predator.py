@@ -10,19 +10,42 @@ from pages.page import Page
 
 
 class Component(object):
+
+    CATEGORY = {
+        '2': '',
+        '3': '',
+        '4': '',
+        '5': '',
+        }
     
     def __init__(self, session=None):
-        # TODO: Problematic initialization
-        self._session = session
+        if session is None:
+            self._session = requests.session()
+
+        self._username = None
+        self._password = None
+
+    def fetch(self, url1, url2, data):
+        r = self._session.get(url1)
+        p = Page(r.text)
+        hidden_data = p.parse_hidden_data()
+        data.update(hidden_data)
+        return self._session.post(url2, data=data)
+
+    def fetch2(self, current_response, url, data, **kwargs):
+        p = Page(current_response.text)
+        hidden_data = p.parse_hidden_data()
+        data.update(hidden_data)
+        return self._session.post(url, data=data, **kwargs)
+    
+    def fetch_home(self):
+        url = 'http://electsys.sjtu.edu.cn/edu/'
+        return self._session.get(url)
     
     def sign_in(self, username, password):
         s = requests.session()
 
-        url = 'http://electsys.sjtu.edu.cn/edu/'
-        r = s.get(url)
-        p = Page(r.text)
-        hidden_data = p.parse_hidden_data()
-
+        r = self.fetch_home()
         url = 'http://electsys.sjtu.edu.cn/edu/index.aspx'
         data = {
             'txtUserName': username,
@@ -30,38 +53,85 @@ class Component(object):
             'rbtnLst': 1,
             'Button1': '登录',
             }
-        data.update(hidden_data)
-        r = s.post(url, data=data)
+        r = self.fetch2(r, url, data)
 
-        correct_url = 'http://electsys.sjtu.edu.cn/edu/student/sdtMain.aspx'
+        # TODO: Write this into a method.
+        correct_url = ('http://electsys.sjtu.edu.cn/'
+                       'edu/student/sdtMain.aspx')
         if r.url == correct_url:
             self._username = username
             self._password = password
 
-            self._session = s
-    
-    def fetch_liberal_arts(self, category):
+    def fetch_liberal_arts_categories(self):
         url = ('http://electsys.sjtu.edu.cn/edu/'
                'student/elect/speltyCommonCourse.aspx')
-        self._session.get(url)
-        
-        
-        
+        return self._session.get(url)
+    
+    def fetch_liberal_arts(self, category):
+        r = self.fetch_liberal_arts_categories()
+        url = ('http://electsys.sjtu.edu.cn/edu/'
+               'student/elect/speltyCommonCourse.aspx')
+        data = {
+            '__EVENTTARGET': 'gridGModule$ctl0%s$radioButton' % category,
+            '__EVENTARGUMENT': '',
+            '__LASTFOCUS': '',
+            'gridGModule$ctl0%s$radioButton' % category: 'radioButton',
+            }
+        return self.fetch2(r, url, data)
+
+    def fetch_liberal_arts_course(self, course_code, category):
+        r = self.fetch_liberal_arts(category)
+        url = ('http://electsys.sjtu.edu.cn/edu/'
+               'student/elect/speltyCommonCourse.aspx')
+        data = {
+            '__EVENTTARGET': '',
+            '__EVENTARGUMENT': '',
+            '__LASTFOCUS': '',
+            'gridGModule$ctl0%s$radioButton' % category: 'radioButton',
+            'myradiogroup': course_code,
+            'lessonArrange': '课程安排',
+            }
+        return self.fetch2(r, url, data)
+
+    def fetch_depts(self):
+        url = ('http://electsys.sjtu.edu.cn/edu/'
+               'student/elect/outSpeltyEP.aspx')
+        return self._session.get(url)
+
+    def fetch_dept(self, dept, grade):
+        r = self.fetch_depts()
+        url = ('http://electsys.sjtu.edu.cn/edu/'
+               'student/elect/outSpeltyEP.aspx')
+        data = {
+            'OutSpeltyEP1$dpYx': dept,
+            'OutSpeltyEP1$dpNj': grade,
+            'OutSpeltyEP1$btnQuery': '查 询',
+            }
+        return self.fetch2(r, url, data)
+
+    def fetch_dept_course(course_code, dept, grade):
+        r = self.fetch_dept(dept, grade)
+        url = ('http://electsys.sjtu.edu.cn/edu/'
+               'student/elect/outSpeltyEP.aspx')
+        data = {
+            'OutSpeltyEP1$dpYx': dept,
+            'OutSpeltyEP1$dpNj': grade,
+            'myradiogroup': course_code,
+            'OutSpeltyEP1$lessonArrange': '课程安排',
+            }
+        return self.fetch2(r, url, data)
 
 
-class Sentry(object):
+class Sentry(Component):
 
     def __init__(self, session=None):
-        self._session = session
+        Component.__init__(self, session)
 
 
-class Executor(object):
+class Executor(Component):
 
-    def __init__(self):
-        self._username = None
-        self._password = None
-
-        self._session = None
+    def __init__(self, session=None):
+        Component.__init__(self, session)
 
     def select_liberal_arts(self,
                             course_id,
@@ -72,48 +142,37 @@ class Executor(object):
                'student/elect/electcheck.aspx')
         self._session.get(url, params={'xklc': nround})
 
-        page = self.open_common_course_table(category)
-
-        common_course_categorys = {
-            u'人文学科': '420',
-            u'社会科学': '430',
-            u'自然科学与工程技术': '440',
-            u'数学或逻辑学': '450',
+        r = self.fetch_liberal_arts_course(course_code, category)
+        url = ('http://electsys.sjtu.edu.cn/edu/'
+               'lesson/viewLessonArrange.aspx')
+        data = {
+            'myradiogroup': course_id,
+            'LessonTime1$btnChoose': '选定此教师',
             }
-        page = self.get_common_course_schedules(category, course_id)
-
-        url = 'http://electsys.sjtu.edu.cn/edu/lesson/viewLessonArrange.aspx'
         params = {
-            'kcdm': course_id,
-            'xklx': u'通识',
+            'kcdm': course_code,
+            'xklx': '通识',
             'redirectForm': 'speltyCommonCourse.aspx',
             'yxdm': '',
-            'tskmk': common_course_categorys[category],
+            'tskmk': '4%s0' % category,
             'kcmk': '-1',
-            'nj': u'无',
+            'nj': '无',
             }
-        data = {
-            'myradiocategory': bsid,
-            'LessonTime1$btnChoose': u'选定此教师',
-            }
-        page = self.post_from_page(page, url, data, params=params)
-
-        params = {
-            'yxdm': '',
-            'nj': u'无',
-            'kcmk': '-1',
-            'txkmk': '',
-            'tskmk': common_course_categorys[category],
-            }
+        
+        r = self.fetch2(r, url, data, params=params)
+        url = ('http://electsys.sjtu.edu.cn/edu/'
+               'student/elect/speltyCommonCourse.aspx')
         data = {
             '__EVENTTARGET': '',
             '__EVENTARGUMENT': '',
             '__LASTFOCUS': '',
-            'btnSubmit': u'选课提交',
+            'btnSubmit': '选课提交',
             }
-        return self.post_from_page(page, self.COMMON_COURSE_URL, data, params=params)
-
-
-p = Executor()
-p.sign_in('5114139017', '0112781X')
-p.select_liberal_arts(1,1,1,1)
+        params = {
+            'yxdm': '',
+            'nj': '无',
+            'kcmk': '-1',
+            'txkmk': '',
+            'tskmk': '4%s0' % category,
+            }
+        return self.fetch2(r, url, data)
