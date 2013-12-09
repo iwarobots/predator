@@ -109,7 +109,7 @@ class Component(object):
             }
         return self.fetch2(r, url, data)
 
-    def fetch_dept_course(course_code, dept, grade):
+    def fetch_dept_course(self, course_code, dept, grade):
         r = self.fetch_dept(dept, grade)
         url = ('http://electsys.sjtu.edu.cn/edu/'
                'student/elect/outSpeltyEP.aspx')
@@ -176,3 +176,42 @@ class Executor(Component):
             'tskmk': '4%s0' % category,
             }
         return self.fetch2(r, url, data)
+
+    def select_elective(self, course_id, course_code, dept, grade, nround):
+        url = ('http://electsys.sjtu.edu.cn/edu/'
+               'student/elect/electcheck.aspx')
+        self._session.get(url, params={'xklc': nround})
+
+        r = self.fetch_dept_course(course_code, dept, grade)
+        url = ('http://electsys.sjtu.edu.cn/edu/'
+               'lesson/viewLessonArrange.aspx')
+        data = {
+            'myradiogroup': course_id,
+            'LessonTime1$btnChoose': '选定此教师',
+            }
+        params = {
+            'kcdm': course_code,
+            'xklx': '选修',
+            'redirectForm': 'outSpeltyEP.aspx',
+            'yxdm': dept,
+            'nj': grade,
+            'kcmk': '-1',
+            'txkmk': '-1',
+            }
+
+        r = self.fetch2(r, url, data=data, params=params)
+        url = ('http://electsys.sjtu.edu.cn/edu/'
+               'student/elect/outSpeltyEP.aspx')
+        data = {
+            'OutSpeltyEP1$dpYx': dept,
+            'OutSpeltyEP1$dpNj': grade,
+            'OutSpeltyEP1$btnSubmit': '选课提交',
+            }
+        params = {
+            'yxdm': dept,
+            'nj': grade,
+            'kcmk': '-1',
+            'txkmk': '-1',
+            'tskmk': '',
+            }
+        return self.fetch2(r, url, data=data, params=params)
