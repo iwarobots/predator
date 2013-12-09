@@ -9,20 +9,12 @@ import requests
 from pages.page import Page
 
 
-class Sentry(object):
-
+class Component(object):
+    
     def __init__(self, session=None):
+        # TODO: Problematic initialization
         self._session = session
-
-
-class Executor(object):
-
-    def __init__(self):
-        self._username = None
-        self._password = None
-
-        self._session = None
-
+    
     def sign_in(self, username, password):
         s = requests.session()
 
@@ -47,6 +39,29 @@ class Executor(object):
             self._password = password
 
             self._session = s
+    
+    def fetch_liberal_arts(self, category):
+        url = ('http://electsys.sjtu.edu.cn/edu/'
+               'student/elect/speltyCommonCourse.aspx')
+        self._session.get(url)
+        
+        
+        
+
+
+class Sentry(object):
+
+    def __init__(self, session=None):
+        self._session = session
+
+
+class Executor(object):
+
+    def __init__(self):
+        self._username = None
+        self._password = None
+
+        self._session = None
 
     def select_liberal_arts(self,
                             course_id,
@@ -59,7 +74,6 @@ class Executor(object):
 
         page = self.open_common_course_table(category)
 
-        #
         common_course_categorys = {
             u'人文学科': '420',
             u'社会科学': '430',
@@ -68,7 +82,6 @@ class Executor(object):
             }
         page = self.get_common_course_schedules(category, course_id)
 
-        #
         url = 'http://electsys.sjtu.edu.cn/edu/lesson/viewLessonArrange.aspx'
         params = {
             'kcdm': course_id,
@@ -85,7 +98,6 @@ class Executor(object):
             }
         page = self.post_from_page(page, url, data, params=params)
 
-        #
         params = {
             'yxdm': '',
             'nj': u'无',
