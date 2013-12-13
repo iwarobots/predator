@@ -168,6 +168,9 @@ class LiberalArtsCoursesParser(TableParser):
             courses.append(course)
         return courses
 
+    def is_available(self, sched_id):
+        pass
+
 
 class ElectiveCoursesParser(TableParser):
 
@@ -188,3 +191,6 @@ class ElectiveCoursesParser(TableParser):
                               self._year)
             courses.append(course)
         return courses
+
+    def is_available(self, sched_id):
+        pass
