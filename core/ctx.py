@@ -7,4 +7,4 @@ from __future__ import absolute_import, unicode_literals
 import zmq
 
 
-CONTEXT = zmq.Context()
+ctx = zmq.Context()
