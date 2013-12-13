@@ -22,7 +22,9 @@ import zmq
 import requests
 
 from core.ctx import ctx
-from core.parsers.parser import BaseParser
+from core.parsers.parser import (BaseParser,
+                                 LiberalArtsCoursesParser,
+                                 ElectiveCoursesParser）
 
 
 class Predator(object):
@@ -192,6 +194,18 @@ class Predator(object):
             result = True
         return result
 
+    def liberal_arts_schedule_is_available(
+        self, sched_id, course_code, category):
+        r = self.download_liberal_arts_schedule(course_code, category)
+        p = LiberalArtsCoursesParser(r.text, course_code, category)
+        return p.is_available(sched_id)
+
+    def elective_schedule_is_available(
+        self, sched_id, course_code, dept_id, year):
+        r = self.download_elective_schedule(course_code, dept_id, year)
+        p = ElectiveCoursesParser(r.text, course_code, dept_id, year)
+        return p.is_available(sched_id)
+
     def select_liberal_arts_schedule(self, sched_id, course_code, category):
         self.select_round()
 
@@ -243,13 +257,6 @@ class Predator(object):
         self.select_elective_schedule(sched_id, course_code, dept_id, year)
         r = self.submit_selections()
         return self.is_submitted(r)
-
-    def is_available(self, course):
-        return True
-
-
-
-
 
 
 class Predator2(object):
