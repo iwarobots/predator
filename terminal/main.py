@@ -14,7 +14,6 @@ from core.predator import Predator
 
 
 class UI(Thread):
-
     def __init__(self, host=None, port='3323'):
         if not host:
             host = '127.0.0.1'

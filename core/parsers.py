@@ -7,7 +7,7 @@ from __future__ import absolute_import, unicode_literals
 from bs4 import BeautifulSoup
 
 from core.courses import (AbstractLiberalArts, AbstractElective,
-                                  LiberalArts, Elective)
+                          LiberalArts, Elective)
 
 
 # TODO: Refactor this.
@@ -20,7 +20,6 @@ def str2(navigable_string, src_encoding=None, dst_encoding=None):
 
 
 class HTMLParser(object):
-
     def __init__(self, html):
         self._html = html
 
@@ -44,7 +43,6 @@ class HTMLParser(object):
 
 
 class HiddenInputParser(HTMLParser):
-
     def __init__(self, html):
         HTMLParser.__init__(self, html)
 
@@ -58,7 +56,6 @@ class HiddenInputParser(HTMLParser):
 
 
 class BaseParser(HTMLParser):
-
     def __init__(self, html):
         HTMLParser.__init__(self, html)
 
@@ -74,7 +71,6 @@ class BaseParser(HTMLParser):
 
 
 class TrParser(HTMLParser):
-
     def __init__(self, html):
         HTMLParser.__init__(self, html)
         self._tr = self.soup.tr
@@ -82,7 +78,6 @@ class TrParser(HTMLParser):
 
 
 class AbstractCourseParser(TrParser):
-
     def __init__(self, html):
         TrParser.__init__(self, html)
 
@@ -93,11 +88,7 @@ class AbstractCourseParser(TrParser):
         return str2(self._tds[2].string).rstrip()
 
 
-
-
-
 class TableParser(BaseParser):
-
     def __init__(self, html):
         BaseParser.__init__(self, html)
 
@@ -106,7 +97,6 @@ class TableParser(BaseParser):
 
 
 class AbstractLiberalArtsCoursesParser(TableParser):
-
     def __init__(self, html, category):
         TableParser.__init__(self, html)
         self._category = category
@@ -122,7 +112,6 @@ class AbstractLiberalArtsCoursesParser(TableParser):
 
 
 class AbstractElectiveCoursesParser(TableParser):
-
     def __init__(self, html, dept_id, year):
         TableParser.__init__(self, html)
         self._dept_id = dept_id
@@ -141,7 +130,6 @@ class AbstractElectiveCoursesParser(TableParser):
 
 
 class LiberalArtsCoursesParser(TableParser):
-
     def __init__(self, html, course_code, category):
         TableParser.__init__(self, html)
         self._course_code = course_code
@@ -163,7 +151,6 @@ class LiberalArtsCoursesParser(TableParser):
 
 
 class ElectiveCoursesParser(TableParser):
-
     def __init__(self, html, course_code, dept_id, year):
         TableParser.__init__(self, html)
         self._course_code = course_code
@@ -186,13 +173,11 @@ class ElectiveCoursesParser(TableParser):
         pass
 
 
-
 class SchedIDNotFound(Exception):
     pass
 
 
 class SchedTableParser(TableParser):
-
     def __init__(self, html):
         TableParser.__init__(self, html)
         self._table = []

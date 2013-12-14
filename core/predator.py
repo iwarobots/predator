@@ -13,19 +13,17 @@
 
 
 from __future__ import absolute_import, unicode_literals
-
 from threading import Thread
 import Queue
 import time
 
-import zmq
 import requests
 
+import zmq
 from core.parsers import BaseParser, SchedTableParser
 
 
 class Predator(object):
-
     _HOME = 'http://electsys.sjtu.edu.cn/edu/'
     _REQUIRED = ('http://electsys.sjtu.edu.cn/edu/'
                  'student/elect/speltyRequiredCourse.aspx')
@@ -270,7 +268,6 @@ class Predator(object):
 
 
 class Predator2(object):
-
     def __init__(self, nround=1, port='3323'):
         self.__backend_socket = ctx.socket(zmq.REP)
         self.__backend_socket.bind('tcp://127.0.0.1:%s' % port)

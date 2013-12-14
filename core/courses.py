@@ -6,7 +6,6 @@ from __future__ import absolute_import, unicode_literals
 
 
 class AbstractCourse(object):
-
     def __init__(self, course_code):
         self._course_code = course_code
 
@@ -17,7 +16,6 @@ class AbstractCourse(object):
 
 # This seems not to be in use.
 class Course(AbstractCourse):
-
     def __init__(self, course_id, course_code):
         AbstractCourse.__init__(self, course_code)
         self._course_id = course_id
@@ -29,7 +27,6 @@ class Course(AbstractCourse):
 
 # This seems not to be in use.
 class Category(object):
-
     def __init__(self, name, code):
         self._name = name
         self._code = code
@@ -44,7 +41,6 @@ class Category(object):
 
 
 class AbstractLiberalArts(AbstractCourse):
-
     def __init__(self, course_code, category):
         AbstractCourse.__init__(self, course_code)
         self._category = category
@@ -59,7 +55,6 @@ class AbstractLiberalArts(AbstractCourse):
 
 
 class LiberalArts(AbstractLiberalArts):
-
     def __init__(self, course_id, course_code, category):
         AbstractLiberalArts.__init__(self, course_code, category)
         self._course_id = course_id
@@ -70,7 +65,6 @@ class LiberalArts(AbstractLiberalArts):
 
 
 class AbstractElective(AbstractCourse):
-
     def __init__(self, course_code, dept_id, year):
         AbstractCourse.__init__(self, course_code)
         self._dept_id = dept_id
@@ -90,7 +84,6 @@ class AbstractElective(AbstractCourse):
 
 
 class Elective(AbstractElective):
-
     def __init__(self, course_id, course_code, dept_id, year):
         AbstractElective.__init__(self, course_code, dept_id, year)
         self._course_id = course_id

@@ -9,13 +9,11 @@ import tornado.web
 
 
 class MainHandler(tornado.web.RequestHandler):
-
     def get(self):
         self.render('templates\index.html')
 
 
 class SignInHandler(tornado.web.RequestHandler):
-
     def post(self):
         a = self.get_argument('username')
         b = self.get_argument('password')
