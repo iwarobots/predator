@@ -6,7 +6,7 @@ from __future__ import absolute_import, unicode_literals
 
 from bs4 import BeautifulSoup
 
-from core.parsers.courses import (AbstractLiberalArts, AbstractElective,
+from core.courses import (AbstractLiberalArts, AbstractElective,
                                   LiberalArts, Elective)
 
 
@@ -93,17 +93,7 @@ class AbstractCourseParser(TrParser):
         return str2(self._tds[2].string).rstrip()
 
 
-class CourseParser(TrParser):
 
-    def __init__(self, html):
-        TrParser.__init__(self, html)
-
-    def parse_course_id(self):
-        return self._tds[0].span.input['value']
-
-    def is_available(self):
-        string = str2(self._tds[11].string).rstrip()
-        return string == '人数未满'
 
 
 class TableParser(BaseParser):
@@ -161,7 +151,7 @@ class LiberalArtsCoursesParser(TableParser):
         courses = []
         table = self.select_table('LessonTime1_gridMain')
         for tr in table.find_all('tr')[1:]:
-            p = CourseParser(str2(tr))
+            p = ScheduleRowParser(str2(tr))
             course = LiberalArts(p.parse_course_id(),
                                  self._course_code,
                                  self._category)
@@ -184,7 +174,7 @@ class ElectiveCoursesParser(TableParser):
         courses = []
         table = self.select_table('LessonTime1_gridMain')
         for tr in table.find_all('tr')[1:]:
-            p = CourseParser(str2(tr))
+            p = ScheduleRowParser(str2(tr))
             course = Elective(p.parse_course_id(),
                               self._course_code,
                               self._dept_id,
@@ -194,3 +184,37 @@ class ElectiveCoursesParser(TableParser):
 
     def is_available(self, sched_id):
         pass
+
+
+
+class SchedIDNotFound(Exception):
+    pass
+
+
+class SchedTableParser(TableParser):
+
+    def __init__(self, html):
+        TableParser.__init__(self, html)
+        self._table = []
+        self._sched_ids = []
+
+    def parse_table(self):
+        if not self._table:
+            table = self.select_table('LessonTime1_gridMain')
+            for tr in table.find_all('tr'):
+                row = []
+                for td in tr.children:
+                    string = str2(td)
+                    if not string == '\n':
+                        row.append(td)
+                self._table.append(row)
+
+    def is_available(self, sched_id):
+        self.parse_table()
+        for row in self._table[1:]:
+            val = row[0].span.input['value']
+            self._sched_ids.append(val)
+            if val == sched_id:
+                return str2(row[11].string) == '人数未满'
+        raise SchedIDNotFound
+

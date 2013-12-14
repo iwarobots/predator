@@ -21,10 +21,7 @@ import time
 import zmq
 import requests
 
-from core.ctx import ctx
-from core.parsers.parser import (BaseParser,
-                                 LiberalArtsCoursesParser,
-                                 ElectiveCoursesParser）
+from core.parsers import BaseParser, SchedTableParser
 
 
 class Predator(object):
@@ -194,69 +191,82 @@ class Predator(object):
             result = True
         return result
 
-    def liberal_arts_schedule_is_available(
-        self, sched_id, course_code, category):
-        r = self.download_liberal_arts_schedule(course_code, category)
-        p = LiberalArtsCoursesParser(r.text, course_code, category)
+    def is_available(self, resp, sched_id):
+        p = SchedTableParser(resp.text)
         return p.is_available(sched_id)
 
-    def elective_schedule_is_available(
-        self, sched_id, course_code, dept_id, year):
-        r = self.download_elective_schedule(course_code, dept_id, year)
-        p = ElectiveCoursesParser(r.text, course_code, dept_id, year)
-        return p.is_available(sched_id)
+    def _select_schedule(self, sched_id, func, args=(), params=None):
+        self.select_round()
+        resp = func(*args)
+        available = self.is_available(resp, sched_id)
+        selected = False
+        if available:
+            data = {
+                'myradiogroup': sched_id,
+                'LessonTime1$btnChoose': '选定此教师',
+            }
+            resp = self.post_from_current_response(
+                resp, self._SCHEDULES, data, params=params
+            )
+            if resp.status_code == 200:
+                selected = True
+        return selected
+
+    def _select_course(self, func, args=()):
+        is_submitted = False
+        selected = func(*args)
+        if selected:
+            resp = self.submit_selections()
+            is_submitted = self.is_submitted(resp)
+        return is_submitted
 
     def select_liberal_arts_schedule(self, sched_id, course_code, category):
-        self.select_round()
-
-        r = self.download_liberal_arts_schedule(course_code, category)
-        data = {
-            'myradiogroup': sched_id,
-            'LessonTime1$btnChoose': '选定此教师',
-        }
-        params = {
-            'kcdm': course_code,
-            'xklx': '通识',
-            'redirectForm': 'speltyCommonCourse.aspx',
-            'yxdm': '',
-            'tskmk': '4%s0' % category,
-            'kcmk': '-1',
-            'nj': '无',
-        }
-        return self.post_from_current_response(
-            r, self._SCHEDULES, data, params=params
+        # TODO: If the number of courses reaches the limit, an error
+        #       page will be presented here.
+        return self._select_schedule(
+            sched_id,
+            self.download_liberal_arts_schedule,
+            args=(course_code, category),
+            params={
+                'kcdm': course_code,
+                'xklx': '通识',
+                'redirectForm': 'speltyCommonCourse.aspx',
+                'yxdm': '',
+                'tskmk': '4%s0' % category,
+                'kcmk': '-1',
+                'nj': '无',
+            }
         )
 
     def select_liberal_arts(self, sched_id, course_code, category):
-        self.select_liberal_arts_schedule(sched_id, course_code, category)
-        r = self.submit_selections()
-        return self.is_submitted(r)
+        return self._select_course(
+            self.select_liberal_arts_schedule,
+            args=(sched_id, course_code, category),
+        )
 
     def select_elective_schedule(self, sched_id, course_code, dept_id, year):
-        self.select_round()
-
-        r = self.download_elective_schedule(course_code, dept_id, year)
-        data = {
-            'myradiogroup': sched_id,
-            'LessonTime1$btnChoose': '选定此教师',
-        }
-        params = {
-            'kcdm': course_code,
-            'xklx': '选修',
-            'redirectForm': 'outSpeltyEP.aspx',
-            'yxdm': dept_id,
-            'nj': year,
-            'kcmk': '-1',
-            'txkmk': '-1',
-        }
-        return self.post_from_current_response(
-            r, self._SCHEDULES, data=data, params=params
+        # TODO: If the number of courses reaches the limit, an error
+        #       page will be presented here.
+        return self._select_schedule(
+            sched_id,
+            self.download_elective_schedule,
+            args=(course_code, dept_id, year),
+            params={
+                'kcdm': course_code,
+                'xklx': '选修',
+                'redirectForm': 'outSpeltyEP.aspx',
+                'yxdm': dept_id,
+                'nj': year,
+                'kcmk': '-1',
+                'txkmk': '-1',
+            }
         )
 
     def select_elective(self, sched_id, course_code, dept_id, year):
-        self.select_elective_schedule(sched_id, course_code, dept_id, year)
-        r = self.submit_selections()
-        return self.is_submitted(r)
+        return self._select_course(
+            self.select_elective_schedule,
+            args=(sched_id, course_code, dept_id, year),
+        )
 
 
 class Predator2(object):
@@ -371,4 +381,5 @@ class Predator2(object):
 
 p = Predator()
 p.sign_in('5114139017', '0112781X')
-print p.select_liberal_arts('354432', 'CA903', '4')
+#print p.select_liberal_arts('354432', 'CA903', '4')
+print p.select_elective('354622', 'AM016', '33000', '2011')
