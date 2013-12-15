@@ -4,27 +4,41 @@
 
 from __future__ import absolute_import, unicode_literals
 
+import time
+
 import tornado.ioloop
 import tornado.web
+
+from core.predator import Predator
+
+predator = Predator()
 
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
-        self.render('templates\index.html')
+        self.render('index.html')
 
 
 class SignInHandler(tornado.web.RequestHandler):
     def post(self):
-        a = self.get_argument('username')
-        b = self.get_argument('password')
-        self.write(a)
-        self.write(b)
-        self.write('1')
+        username = self.get_argument('username')
+        password = self.get_argument('password')
+        res = predator.sign_in(username, password)
+        if res:
+            self.write('ok')
+        else:
+            self.write('failed')
+            self.redirect('/')
+
+
+class SelectCourseHandler(tornado.web.RequestHandler):
+    def get(self):
+        pass
 
 
 if __name__ == "__main__":
     application = tornado.web.Application([
-        (r"/", MainHandler),
+        (r'/', MainHandler),
         (r'/signin', SignInHandler),
     ])
     application.listen(8888)

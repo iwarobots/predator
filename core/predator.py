@@ -19,7 +19,6 @@ import time
 
 import requests
 
-import zmq
 from core.parsers import BaseParser, SchedTableParser
 
 
@@ -374,9 +373,9 @@ class Predator2(object):
         while True:
             msg = self.__backend_socket.recv_json()
             self.receive(msg)
-
-
-p = Predator()
-p.sign_in('5114139017', '0112781X')
-#print p.select_liberal_arts('354432', 'CA903', '4')
-print p.select_elective('354622', 'AM016', '33000', '2011')
+#
+#
+# p = Predator()
+# p.sign_in('5114139017', '0112781X')
+# #print p.select_liberal_arts('354432', 'CA903', '4')
+# print p.select_elective('354622', 'AM016', '33000', '2011')
