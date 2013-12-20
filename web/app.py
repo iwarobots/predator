@@ -4,14 +4,12 @@
 
 from __future__ import absolute_import, unicode_literals
 
-import time
-
 import tornado.ioloop
 import tornado.web
 
-from core.predator import Predator
+from core.predator import RemoteSystem
 
-predator = Predator()
+predator = RemoteSystem()
 
 
 class MainHandler(tornado.web.RequestHandler):
@@ -19,7 +17,7 @@ class MainHandler(tornado.web.RequestHandler):
         self.render('index.html')
 
 
-class SignInHandler(tornado.web.RequestHandler):
+class LoginHandler(tornado.web.RequestHandler):
     def post(self):
         username = self.get_argument('username')
         password = self.get_argument('password')
@@ -31,15 +29,16 @@ class SignInHandler(tornado.web.RequestHandler):
             self.redirect('/')
 
 
-class SelectCourseHandler(tornado.web.RequestHandler):
+class AddCourseHandler(tornado.web.RequestHandler):
     def get(self):
-        pass
+        self.render('add_course.html')
 
 
 if __name__ == "__main__":
     application = tornado.web.Application([
         (r'/', MainHandler),
-        (r'/signin', SignInHandler),
+        (r'/login', LoginHandler),
+        (r'/addcourse', AddCourseHandler),
     ])
     application.listen(8888)
     tornado.ioloop.IOLoop.instance().start()

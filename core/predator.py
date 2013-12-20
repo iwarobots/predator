@@ -13,16 +13,17 @@
 
 
 from __future__ import absolute_import, unicode_literals
+
 from threading import Thread
 import Queue
 import time
 
 import requests
 
-from core.parsers import BaseParser, SchedTableParser
+from core.parsers import BaseParser, SchedPageParser
 
 
-class Predator(object):
+class RemoteSystem(object):
     _HOME = 'http://electsys.sjtu.edu.cn/edu/'
     _REQUIRED = ('http://electsys.sjtu.edu.cn/edu/'
                  'student/elect/speltyRequiredCourse.aspx')
@@ -54,11 +55,9 @@ class Predator(object):
         return self._session.post(url, data=data, **kwargs)
 
     def download_home(self):
-        # Tested
         return self._session.get(self._HOME)
 
     def sign_in(self, username, password):
-        # Tested
         r = self.download_home()
         url = 'http://electsys.sjtu.edu.cn/edu/index.aspx'
         data = {
@@ -81,20 +80,15 @@ class Predator(object):
         return result
 
     def select_round(self):
-        # Tested
         if not self._round_selected:
             url = ('http://electsys.sjtu.edu.cn/edu/'
                    'student/elect/electcheck.aspx')
             self._session.get(url, params={'xklc': self._round})
 
     def download_liberal_arts_categories(self):
-        # Tested
         return self._session.get(self._LIBERAL_ARTS)
 
-    def _download_liberal_arts_from_categories(
-            self, response, category):
-
-        # Tested
+    def _download_liberal_arts_from_categories(self, response, category):
         data = {
             '__EVENTTARGET': 'gridGModule$ctl0%s$radioButton' % category,
             '__EVENTARGUMENT': '',
@@ -106,16 +100,13 @@ class Predator(object):
         )
 
     def download_liberal_arts(self, category):
-        # Tested
         r = self.download_liberal_arts_categories()
         return self._download_liberal_arts_from_categories(
             r, category
         )
 
-    def _download_liberal_arts_schedule_from_courses(
-            self, response, course_code, category):
-
-        # Tested
+    def _download_liberal_arts_schedule_from_courses(self, response,
+                                                     course_code, category):
         data = {
             '__EVENTTARGET': '',
             '__EVENTARGUMENT': '',
@@ -129,14 +120,12 @@ class Predator(object):
         )
 
     def download_liberal_arts_schedule(self, course_code, category):
-        # Tested
         r = self.download_liberal_arts(category)
         return self._download_liberal_arts_schedule_from_courses(
             r, course_code, category
         )
 
     def download_elective(self, dept_id, year):
-        # Tested
         r = self._session.get(self._ELECTIVE)
         data = {
             'OutSpeltyEP1$dpYx': dept_id,
@@ -145,10 +134,21 @@ class Predator(object):
         }
         return self.post_from_current_response(r, self._ELECTIVE, data)
 
-    def _download_elective_schedule_from_courses(
-            self, response, course_code, dept_id, year):
+    def download_dept_ids(self):
+        # TODO: This should be written into another class.
+        opts = []
+        from bs4 import BeautifulSoup
 
-        # Tested
+        r = self._session.get(self._ELECTIVE)
+        soup = BeautifulSoup(r.text)
+        dept_id_list = soup.find('select', {'id': 'OutSpeltyEP1_dpYx'})
+        for opt in dept_id_list.children:
+            if opt != '\n':
+                opts.append(opt['value'])
+        return opts
+
+    def _download_elective_schedule_from_courses(self, response, course_code,
+                                                 dept_id, year):
         data = {
             'OutSpeltyEP1$dpYx': dept_id,
             'OutSpeltyEP1$dpNj': year,
@@ -160,7 +160,6 @@ class Predator(object):
         )
 
     def download_elective_schedule(self, course_code, dept_id, year):
-        # Tested
         r = self.download_elective(dept_id, year)
         return self._download_elective_schedule_from_courses(
             r, course_code, dept_id, year
@@ -189,7 +188,7 @@ class Predator(object):
         return result
 
     def is_available(self, resp, sched_id):
-        p = SchedTableParser(resp.text)
+        p = SchedPageParser(resp.text)
         return p.is_available(sched_id)
 
     def _select_schedule(self, sched_id, func, args=(), params=None):
@@ -266,6 +265,14 @@ class Predator(object):
         )
 
 
+class Predator(Thread):
+    def __init__(self):
+        self.__targets = []
+
+    def run(self):
+        pass
+
+
 class Predator2(object):
     def __init__(self, nround=1, port='3323'):
         self.__backend_socket = ctx.socket(zmq.REP)
@@ -302,15 +309,6 @@ class Predator2(object):
                     time.sleep(1)
 
             time.sleep(5)
-
-    def handle_sign_in(self, msg):
-        #{
-        #    'action': 'sign_in'
-        #    'username': '',
-        #    'password': '',
-        #}
-        res = self.__executor.sign_in(msg['username'], msg['password'])
-        self.__backend_socket.send_json(res)
 
     def handle_add(self, msg):
         #{
@@ -373,9 +371,6 @@ class Predator2(object):
         while True:
             msg = self.__backend_socket.recv_json()
             self.receive(msg)
-#
-#
-# p = Predator()
-# p.sign_in('5114139017', '0112781X')
-# #print p.select_liberal_arts('354432', 'CA903', '4')
-# print p.select_elective('354622', 'AM016', '33000', '2011')
+
+
+rs = RemoteSystem()

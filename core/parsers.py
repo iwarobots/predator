@@ -6,9 +6,6 @@ from __future__ import absolute_import, unicode_literals
 
 from bs4 import BeautifulSoup
 
-from core.courses import (AbstractLiberalArts, AbstractElective,
-                          LiberalArts, Elective)
-
 
 # TODO: Refactor this.
 def str2(navigable_string, src_encoding=None, dst_encoding=None):
@@ -77,129 +74,96 @@ class TrParser(HTMLParser):
         self._tds = self._tr.find_all('td')
 
 
-class AbstractCourseParser(TrParser):
+# class TableParser(HTMLParser):
+#     def __init__(self, html):
+#         HTMLParser.__init__(self, html)
+#         self._table_tag = None
+#         self._table = []
+#
+#     def select_table(self, table_id):
+#         self._table_tag = self.soup.find('table', {'id': table_id})
+#         return self._table_tag
+#
+#     def parse_table(self):
+#         pass
+
+class TableParser(HTMLParser):
     def __init__(self, html):
-        TrParser.__init__(self, html)
+        HTMLParser.__init__(self, html)
 
-    def parse_name(self):
-        return str2(self._tds[1].string).rstrip()
+        try:
+            self._table_element = self.soup.table
+        except:
+            raise ValueError('this is not a valid table element')
 
-    def parse_code(self):
-        return str2(self._tds[2].string).rstrip()
-
-
-class TableParser(BaseParser):
-    def __init__(self, html):
-        BaseParser.__init__(self, html)
-
-    def select_table(self, table_id):
-        return self.soup.find('table', {'id': table_id})
-
-
-class AbstractLiberalArtsCoursesParser(TableParser):
-    def __init__(self, html, category):
-        TableParser.__init__(self, html)
-        self._category = category
+        self._table = []
 
     def parse(self):
-        courses = []
-        table = self.select_table('gridMain')
-        for tr in table.find_all('tr')[1:]:
-            p = AbstractCourseParser(str2(tr))
-            course = AbstractLiberalArts(p.parse_code(), self._category)
-            courses.append(course)
-        return courses
-
-
-class AbstractElectiveCoursesParser(TableParser):
-    def __init__(self, html, dept_id, year):
-        TableParser.__init__(self, html)
-        self._dept_id = dept_id
-        self._year = year
-
-    def parse(self):
-        courses = []
-        table = self.select_table('OutSpeltyEP1_gridMain')
-        for tr in table.find_all('tr')[1:]:
-            p = AbstractCourseParser(str2(tr))
-            course = AbstractElective(p.parse_code(),
-                                      self._dept_id,
-                                      self._year)
-            courses.append(course)
-        return courses
+        if not self._table:
+            for tr in self._table_element.find_all('tr'):
+                row = []
+                for td in tr.find_all('td'):
+                    # filter \n
+                    if not str2(td) == '\n':
+                        row.append(td)
+                self._table.append(row)
+        return self._table
 
 
 class LiberalArtsCoursesParser(TableParser):
-    def __init__(self, html, course_code, category):
+    def __init__(self, html):
         TableParser.__init__(self, html)
-        self._course_code = course_code
-        self._category = category
+
+
+class ElectiveCoursesParser(BaseParser):
+    def __init__(self, html):
+        BaseParser.__init__(self, html)
+        self._table = None
 
     def parse(self):
-        courses = []
-        table = self.select_table('LessonTime1_gridMain')
-        for tr in table.find_all('tr')[1:]:
-            p = ScheduleRowParser(str2(tr))
-            course = LiberalArts(p.parse_course_id(),
-                                 self._course_code,
-                                 self._category)
-            courses.append(course)
-        return courses
+        if not self._table:
+            table_element = self.soup.find(
+                'table',
+                {'id': 'OutSpeltyEP1_gridMain'},
+            )
+            p = TableParser(str2(table_element))
+            self._table = p.parse()
+        return self._table
 
-    def is_available(self, sched_id):
-        pass
-
-
-class ElectiveCoursesParser(TableParser):
-    def __init__(self, html, course_code, dept_id, year):
-        TableParser.__init__(self, html)
-        self._course_code = course_code
-        self._dept_id = dept_id
-        self._year = year
-
-    def parse(self):
-        courses = []
-        table = self.select_table('LessonTime1_gridMain')
-        for tr in table.find_all('tr')[1:]:
-            p = ScheduleRowParser(str2(tr))
-            course = Elective(p.parse_course_id(),
-                              self._course_code,
-                              self._dept_id,
-                              self._year)
-            courses.append(course)
-        return courses
-
-    def is_available(self, sched_id):
-        pass
+    def a(self):
+        names = []
+        self.parse()
+        for row in self._table[1:]:
+            name = str2(row[1].string).rstrip()
+            names.append(name)
+        return names
 
 
 class SchedIDNotFound(Exception):
     pass
 
 
-class SchedTableParser(TableParser):
+class SchedPageParser(BaseParser):
     def __init__(self, html):
-        TableParser.__init__(self, html)
-        self._table = []
+        BaseParser.__init__(self, html)
+        self._table = None
         self._sched_ids = []
 
-    def parse_table(self):
+    def parse(self):
         if not self._table:
-            table = self.select_table('LessonTime1_gridMain')
-            for tr in table.find_all('tr'):
-                row = []
-                for td in tr.children:
-                    string = str2(td)
-                    if not string == '\n':
-                        row.append(td)
-                self._table.append(row)
+            table_element = self.soup.find(
+                'table',
+                {'id', 'LessonTime1_gridMain'},
+            )
+            p = TableParser(str2(table_element))
+            self._table = p.parse()
+        return self._table
 
     def is_available(self, sched_id):
-        self.parse_table()
+        self.parse()
         for row in self._table[1:]:
             val = row[0].span.input['value']
             self._sched_ids.append(val)
             if val == sched_id:
                 return str2(row[11].string) == '人数未满'
-        raise SchedIDNotFound
-
+        return -1

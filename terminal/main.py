@@ -10,7 +10,7 @@ from threading import Thread
 import zmq
 
 from core.ctx import ctx
-from core.predator import Predator
+from core.predator import RemoteSystem
 
 
 class UI(Thread):
@@ -178,5 +178,5 @@ if __name__ == '__main__':
     ui = UI(port=port)
     ui.start()
 
-    p = Predator(port=port)
+    p = RemoteSystem(port=port)
     p.start()
