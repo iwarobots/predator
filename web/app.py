@@ -7,7 +7,7 @@ from __future__ import absolute_import, unicode_literals
 import tornado.ioloop
 import tornado.web
 
-from core.predator import RemoteSystem
+from core.remote_system import RemoteSystem
 
 predator = RemoteSystem()
 

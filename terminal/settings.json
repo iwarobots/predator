@@ -1,0 +1,27 @@
+{
+    "predator": {
+        "interval": 5.0,
+        "auth": ""
+    },
+
+    "account": {
+        "username": "5114139017",
+        "password": "0112781X"
+    },
+
+    "targets": [
+        {
+            "schedule_id": "xxxxxx",
+            "course_code": "xxyyy",
+            "category": "0",
+            "course_type": "1"
+        },
+        {
+            "schedule_id": "xxxxxx",
+            "course_code": "xxyyy",
+            "dept_id": "0",
+            "year": "2011",
+            "course_type": "1"
+        }
+    ]
+}

@@ -10,7 +10,7 @@ from threading import Thread
 import zmq
 
 from core.ctx import ctx
-from core.predator import RemoteSystem
+from core.remote_system import RemoteSystem
 
 
 class UI(Thread):
